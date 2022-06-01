@@ -25,10 +25,11 @@ class PhotosFragment : Fragment(R.layout.fragment_photos) {
 
     private lateinit var binding: FragmentPhotosBinding
     private lateinit var adapter: PhotosAdapter
-    private lateinit var photos: MutableList<Photo>
     private lateinit var title: String
 
     private val viewModel: PhotosViewModel by viewModels()
+    private var photos = mutableListOf<Photo>()
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -38,7 +39,18 @@ class PhotosFragment : Fragment(R.layout.fragment_photos) {
         binding.titleTv.text = title
         setupAdapter()
         observeData()
-        filter()
+
+        binding.searchView.setOnQueryTextListener(object: SearchView.OnQueryTextListener{
+            override fun onQueryTextSubmit(s: String?): Boolean {
+                return true
+            }
+
+            override fun onQueryTextChange(s: String?): Boolean {
+                filter()
+                return true
+            }
+
+        })
     }
 
     private fun setupAdapter() {
@@ -71,6 +83,7 @@ class PhotosFragment : Fragment(R.layout.fragment_photos) {
                     is Resource.Success -> {
                         photos = it.data!!
                         adapter.submitList(photos)
+                        filter()
                     }
                 }
             }
@@ -78,22 +91,13 @@ class PhotosFragment : Fragment(R.layout.fragment_photos) {
     }
 
     private fun filter(){
-        binding.searchView.setOnQueryTextListener(object: SearchView.OnQueryTextListener{
-            override fun onQueryTextSubmit(s: String?): Boolean {
-                return true
+        val filteredPhotos = mutableListOf<Photo>()
+        for (photo in photos) {
+            if (photo.title.lowercase(Locale.ROOT)
+                    .contains(binding.searchView.query.toString().lowercase(Locale.ROOT))) {
+                filteredPhotos.add(photo)
             }
-
-            override fun onQueryTextChange(s: String?): Boolean {
-                val filteredPhotos = mutableListOf<Photo>()
-                for (photo in photos) {
-                    if (photo.title.lowercase(Locale.ROOT).contains(s!!.lowercase(Locale.ROOT))) {
-                        filteredPhotos.add(photo)
-                    }
-                }
-                adapter.submitList(filteredPhotos)
-                return true
-            }
-
-        })
+        }
+        adapter.submitList(filteredPhotos)
     }
 }
